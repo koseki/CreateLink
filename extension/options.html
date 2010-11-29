@@ -13,7 +13,7 @@
 		var formats = chrome.self.getBackgroundPage().instance().formats;
 		try{
 			var ctable	= new CocoaTable(formats, [
-				'label', 'format', 'filter'
+				'label', 'format', 'filter', 'shortcut'
 			] );
 			ctable._listener.onUpdated = function () {
 				var json = ctable.serialize();
@@ -47,7 +47,8 @@
 				<tr> 
 					<td id="column-name">Name</td> 
 					<td id="column-format">Format</td> 
-					<td id="column-filter">Filter</td> 
+                                        <td id="column-filter">Filter</td> 
+                                        <td id="column-shortcut">Key</td> 
 				</tr> 
 			</thead> 
 		<tbody id="formats"> 
@@ -60,7 +61,7 @@
 		</div> 
 	</div>
 
-	<h2>Variables</h2>
+        <h2>Variables</h2>
 	<div>
 	Create Link recognizes some <a href="https://addons.mozilla.org/en/firefox/addon/142">Make Link</a> compatible variables.
 	</div>
@@ -80,6 +81,36 @@
 		<dt>%input%</dt>
 		<dd>Popups a dialog to input text.</dd>
 	</dl>
+	
+        <h2>Key Configuration</h2>        
+        <p>Page reload is required when you change the key configuration.</p>
+        <p>Format: [CMSARU]+{key},[CMSARU]+{key},...</p>
+        
+        <dl id="variables">
+        <dt>C</dt>
+        <dd>Ctrl key</dd>
+        <dt>M</dt>
+        <dd>Command / Meta key</dd>
+        <dt>S</dt>
+        <dd>Shift key</dd>
+        <dt>A</dt>
+        <dd>Alt / Option key</dd>
+        <dt>R</dt>
+        <dd>Only when selecting text or input field has forcus.</dd>
+        <dt>U</dt>
+        <dd>Not 'R'.</dd>
+        
+        <h3>Example</h3>
+        <dl id="variables">
+        <dt>CUC</dt>
+        <dd>Ctrl-C only when selecting nothing.</dd>
+        <dt>MS1,CAX</dt>
+        <dd>Command-Shift-1 or Ctrl-Option-X</dd>
+        </dl>
+        
+        </dl>
+	
+	
 <!--
 	<h2>Contributor</h2>
 	<a href="http://github.com/hnakamur/">hnakamur (Hiroaki Nakamura)</a>

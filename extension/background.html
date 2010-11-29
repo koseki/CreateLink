@@ -11,14 +11,11 @@
 	chrome.extension.onRequest.addListener(
 		function (request, sender, sendResponse) {
 			if ( request.command == 'setClipboard' ) {
-				var proxy = document.getElementById('clipboard_object');
-				if ( useNPAPI )
-					proxy.set(request.data);
-				else {
-					proxy.value = request.data;
-					proxy.select();
-					document.execCommand("copy");
-				}
+			  instance().setClipboard(request.data);
+			} else if (request.command == 'formatClipboard') {
+			  instance().formatClipboard(request.formatNum, request.url, request.title, request.text);
+			} else if (request.command == 'getKeymap') {
+			  sendResponse(instance().getKeymap());
 			}
 		}
 	);
@@ -29,9 +26,9 @@
 		} );
   }
   CreateLink.default_formats = [
-      {label: "Plain text", format: '%text% %url%' },
-      {label: "HTML", format: '<a href="%url%">%htmlEscapedText%</a>' },
-      {label: "mediaWiki", format: '[%url% %text%]' },
+      {label: "Plain text", format: '%text% %url%', shortcut: "" },
+      {label: "HTML", format: '<a href="%url%">%htmlEscapedText%</a>', shortcut: "" },
+      {label: "mediaWiki", format: '[%url% %text%]', shortcut: "" },
   ];
   CreateLink.prototype.readFormats = function () {
 		var formats;
@@ -44,8 +41,14 @@
     }
 		return formats;
   }
+  CreateLink.prototype.formatClipboard = function (formatnum, url, title, text) {
+    var def = this.formats[formatnum];
+    var data = this.format(def, url, title, text);
+    this.setClipboard(data);
+  }
   CreateLink.prototype.format = function(def, url, title, text) {
     // see chrome://makelink/content/help/defininglinktypes.html
+    if (text == null || text.length <= 0) text = title;
     var data = def.format.
       replace(/%url%/g, url).
       replace(/%text%/g, text.replace(/\n/g, ' ')).
@@ -55,7 +58,7 @@
       replace(/%newline%/g, '\n').
       replace(/%htmlEscapedText%/g, this.escapeHTML(text)).
       // TODO: window.prompt does not respond in popup window.
-      //replace(/%input%/g, showPrompt).
+      //replace(/%input%/g, this.showPrompt()).
       replace(/\\t/g, '\t').
       replace(/\\n/g, '\n');
     
@@ -76,14 +79,52 @@
     var f = function(c){ return charMap[c]; };
     return text ? text.replace(/[&<>'"]/g, f) : text;
   }
-
-function showPrompt(text, pos, subject) {
+  /*
+  CreateLink.prototype.showPrompt = function(text, pos, subject) {
     var msg = "Please enter the input text for \n" + subject;
     var s = window.prompt(msg);
     return (s === null) ? "" : s;
-}
-
-
+  }
+  */
+  CreateLink.prototype.setClipboard = function(text) {
+    var proxy = document.getElementById('clipboard_object');
+    if ( useNPAPI )
+      proxy.set(text);
+    else {
+      proxy.value = text;
+      proxy.select();
+      document.execCommand("copy");
+    }
+  }
+  CreateLink.prototype.getKeymap = function() {
+    var fm = this.formats;
+    var result = {};
+    for(var i = 0; i < fm.length; i++) {
+      var keys = fm[i].shortcut;
+      if (keys == null || keys == "") continue;
+      keys = keys.split(",");
+      for (var j = 0; j < keys.length; j++) {
+        // code,Ctrl,Meta,Alt,Shift,selected(RU)
+        var key = keys[j].toUpperCase().match(/([CMASRU]+)([!-~])/);
+        if (! key) continue;
+        var n = [];
+        n[0] = key[2].charCodeAt(0);
+        n[1] = key[1].indexOf("C") < 0 ? 0 : 1;
+        n[2] = key[1].indexOf("M") < 0 ? 0 : 1;
+        n[3] = key[1].indexOf("A") < 0 ? 0 : 1;
+        n[4] = key[1].indexOf("S") < 0 ? 0 : 1;
+        var o = result;
+        for(var k = 0; k < n.length; k++) {
+          if (! o[n[k]]) o[n[k]] = {};
+          o = o[n[k]];
+        } 
+        if (key[1].indexOf("U") > 0 || key[1].indexOf("R") < 0) o[0] = i;
+        if (key[1].indexOf("R") > 0 || key[1].indexOf("U") < 0) o[1] = i;
+      }
+    }
+    // console.log(result);
+    return result;
+  }
   
 function instance() {
 	if ( !window.__instance ) {

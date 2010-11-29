@@ -5,15 +5,37 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
 
 window.addEventListener('keydown', shortcutCopy, true);
 
+var keymap = null;
+
 function shortcutCopy(event) {
-    if (event.keyCode != 67) return;
-    var isWin = (navigator.platform.indexOf("Win") != -1);
-    var isMac = (navigator.platform.indexOf("Mac") != -1);
-    if ((! isMac && ! event.ctrlKey) || (isMac && ! event.metaKey)) return;
-    if (isSelected()) return;
-    var crlf  = isWin ? "\r\n" : "\n";
-    var txt   = document.title + crlf + document.location.href + crlf + crlf;
-    chrome.extension.sendRequest({command: "setClipboard", data: txt });
+  var fn = getFormatNum(event);
+  if (fn === null) return;
+  // console.log(fn);
+  
+  var url = document.location.href;
+  var title = document.title;
+  var sel = window.getSelection();
+  var txt = (sel ? sel.toString() : '');
+  chrome.extension.sendRequest({command: "formatClipboard", formatNum: fn, url: url, title: title, text: txt });
+}
+
+function getFormatNum(event) {
+  if (keymap == null) {
+    chrome.extension.sendRequest({command: "getKeymap"}, function(response) { keymap = response; getFormatNum(event) });
+    return null;
+  }
+  var k = keymap[event.keyCode];
+  if (!k) return null;
+  k = k[event.ctrlKey ? 1 : 0];
+  if (!k) return null;
+  k = k[event.metaKey ? 1 : 0];
+  if (!k) return null;
+  k = k[event.altKey ? 1 : 0];
+  if (!k) return null;
+  k = k[event.shiftKey ? 1 : 0]
+  if (!k) return null;
+  k = k[isSelected() ? 1 : 0];
+  return (k == null) ? null : k;
 }
 
 function isSelected() {
