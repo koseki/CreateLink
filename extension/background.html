@@ -44,6 +44,46 @@
     }
 		return formats;
   }
+  CreateLink.prototype.format = function(def, url, title, text) {
+    // see chrome://makelink/content/help/defininglinktypes.html
+    var data = def.format.
+      replace(/%url%/g, url).
+      replace(/%text%/g, text.replace(/\n/g, ' ')).
+      replace(/%text_n%/g, text).
+      replace(/%text_br%/g, text.replace(/\n/g, '<br />\n')).
+      replace(/%title%/g, title).
+      replace(/%newline%/g, '\n').
+      replace(/%htmlEscapedText%/g, this.escapeHTML(text)).
+      // TODO: window.prompt does not respond in popup window.
+      //replace(/%input%/g, showPrompt).
+      replace(/\\t/g, '\t').
+      replace(/\\n/g, '\n');
+    
+    var m = def.filter.match(/^s\/(.+?)\/(.*?)\/(\w*)$/);
+    if (m) {
+      data = data.replace(m[1], m[2]);
+    }
+    return data;
+  }
+  CreateLink.prototype.escapeHTML = function(text) {
+    var charMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&apos;',
+      '"': '&quot;'
+    };
+    var f = function(c){ return charMap[c]; };
+    return text ? text.replace(/[&<>'"]/g, f) : text;
+  }
+
+function showPrompt(text, pos, subject) {
+    var msg = "Please enter the input text for \n" + subject;
+    var s = window.prompt(msg);
+    return (s === null) ? "" : s;
+}
+
+
   
 function instance() {
 	if ( !window.__instance ) {
